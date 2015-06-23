@@ -4,8 +4,12 @@
     <string name="action_settings">Settings</string>
 
     <string name="edittext_input_user_name_hint">Enter user name</string>
+    <string name="comments_title">Comments</string>
 
-    <string name="pref_user_name">pref_user_name</string>
-    <string name="pref_user_id">pref_user_id</string>
-    <string name="pref_next_url">pref_next_url</string>
+    <string name="pref_user_name" translatable="false">pref_user_name</string>
+    <string name="pref_user_id" translatable="false">pref_user_id</string>
+    <string name="pref_next_url" translatable="false">pref_next_url</string>
+    <string name="pref_is_new_user" translatable="false">pref_is_new_user</string>
+
+    <string name="content_authority" translatable="false">com.fitaleks.instafeed</string>
 </resources>

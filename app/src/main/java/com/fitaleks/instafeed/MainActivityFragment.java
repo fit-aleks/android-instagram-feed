@@ -1,38 +1,52 @@
 package com.fitaleks.instafeed;
 
 import android.content.Context;
-import android.support.v4.app.Fragment;
+import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.util.Log;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 
-import com.fitaleks.instafeed.data.InstagramPhoto;
-import com.fitaleks.instafeed.data.LoadDataTask;
+import com.fitaleks.instafeed.data.FeedFetchService;
+import com.fitaleks.instafeed.data.InstaFeedContract;
 import com.fitaleks.instafeed.data.Utils;
 
-import java.util.ArrayList;
 
+public class MainActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
-/**
- * A placeholder fragment containing a simple view.
- */
-public class MainActivityFragment extends Fragment {
+    private static final int PHOTOS_LOADER = 0;
 
     private EditText            mEditText;
     private InstaFeedAdapter    mAdapter;
-    private LinearLayoutManager mLayoutManager;
 
     private boolean loading     = true;
     private int previousTotal   = 0;
+
+    private static final String[] PHOTOS_COLUMNS = {
+            InstaFeedContract.PhotoEntry.TABLE_NAME + "." + InstaFeedContract.PhotoEntry._ID,
+            InstaFeedContract.PhotoEntry.COLUMN_CREATED_TIME,
+            InstaFeedContract.PhotoEntry.COLUMN_DESCRIPTION,
+            InstaFeedContract.PhotoEntry.COLUMN_IMAGE_URL,
+            InstaFeedContract.PhotoEntry.COLUMN_INSTA_ID
+    };
+
+    public static final int COL_PHOTO_ID            = 0;
+    public static final int COL_PHOTO_CREATION_TIME = 1;
+    public static final int COL_PHOTO_DESCR         = 2;
+    public static final int COL_PHOTO_URL           = 3;
 
     public MainActivityFragment() {
     }
@@ -40,68 +54,110 @@ public class MainActivityFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+        final View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
         mEditText = (EditText) rootView.findViewById(R.id.edit_text_user_name);
         mEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                    LoadDataTask loadDataTask = new LoadDataTask(getActivity(), onAsyncTaskCompleteCallback);
-                    loadDataTask.execute(mEditText.getText().toString());
-
                     InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
                     imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                    loadMorePhotos();
                     return true;
                 }
                 return false;
             }
         });
 
-        final RecyclerView mRecyclerView = (RecyclerView)rootView.findViewById(R.id.instafeed_recycler_view);
-        mRecyclerView.setHasFixedSize(true);
+        final String nameOfLastUser = Utils.getName(getActivity());
+        if (!nameOfLastUser.equals(""))
+            mEditText.setText(nameOfLastUser);
 
-        mLayoutManager = new LinearLayoutManager(getActivity());
-        mRecyclerView.setLayoutManager(mLayoutManager);
-
-        mAdapter = new InstaFeedAdapter(getActivity(), new ArrayList<InstagramPhoto>());
-        mRecyclerView.setAdapter(mAdapter);
-        mRecyclerView.addOnScrollListener(onScrollListener);
+        final ListView listView = (ListView)rootView.findViewById(R.id.instafeed_recycler_view);
+        mAdapter = new InstaFeedAdapter(getActivity(), null, 0);
+        listView.setAdapter(mAdapter);
+        listView.setOnScrollListener(onScrollListener);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Cursor cursor = mAdapter.getCursor();
+                if (cursor != null && cursor.moveToPosition(position)) {
+                    final String photoId = cursor.getString(cursor.getColumnIndex(InstaFeedContract.PhotoEntry.COLUMN_INSTA_ID));
+                    Intent goToComments = new Intent(getActivity(), CommentsActivity.class)
+                            .putExtra(CommentsActivity.KEY_PHOTO_ID, photoId);
+                    startActivity(goToComments);
+                }
+            }
+        });
 
         return rootView;
     }
 
-    private final LoadDataTask.OnTaskComplete onAsyncTaskCompleteCallback = new LoadDataTask.OnTaskComplete() {
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        getLoaderManager().initLoader(PHOTOS_LOADER, null, this);
+        super.onActivityCreated(savedInstanceState);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        getLoaderManager().restartLoader(PHOTOS_LOADER, null, this);
+    }
+
+
+    private final ListView.OnScrollListener onScrollListener = new ListView.OnScrollListener(){
         @Override
-        public void onPhotosFetchCompleted(ArrayList<InstagramPhoto> listOfPhotoData, boolean isNewUser) {
-            if (isNewUser) {
-                mAdapter.resetAndAddItems(listOfPhotoData);
-            } else {
-                mAdapter.addItems(listOfPhotoData);
-            }
-        }
-    };
-
-    private final RecyclerView.OnScrollListener onScrollListener = new RecyclerView.OnScrollListener() {
-        @Override
-        public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-            super.onScrolled(recyclerView, dx, dy);
-
-            int visibleItemCount = mLayoutManager.getChildCount();
-            int totalItemCount = mLayoutManager.getItemCount();
-            int pastVisiblesItems = mLayoutManager.findFirstVisibleItemPosition();
-
-            if (loading) {
-                if ( totalItemCount > previousTotal ) {
-                    loading = false;
-                    previousTotal = totalItemCount;
+        public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+            if (totalItemCount < previousTotal) {
+                previousTotal = totalItemCount;
+                if (totalItemCount == 0) {
+                    loading = true;
                 }
             }
-            if (!loading && (totalItemCount - visibleItemCount) <= (pastVisiblesItems + 2) ) {
-                LoadDataTask loadDataTask = new LoadDataTask(getActivity(), onAsyncTaskCompleteCallback);
-                loadDataTask.execute(mEditText.getText().toString());
+
+            if (loading && (totalItemCount > previousTotal)) {
+                loading = false;
+                previousTotal = totalItemCount;
+            }
+            if (!loading && (totalItemCount - visibleItemCount) <= (firstVisibleItem + 2) ) {
+                loadMorePhotos();
                 loading = true;
             }
         }
+
+        @Override
+        public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+        }
     };
+
+    private void loadMorePhotos() {
+        Intent intent = new Intent(getActivity(), FeedFetchService.class);
+        intent.putExtra(FeedFetchService.USER_NAME_EXTRA, mEditText.getText().toString());
+        getActivity().startService(intent);
+    }
+
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        final String sortOrder = InstaFeedContract.PhotoEntry.COLUMN_CREATED_TIME + " DESC";
+        return new CursorLoader(getActivity(),
+                InstaFeedContract.PhotoEntry.CONTENT_URI,
+                PHOTOS_COLUMNS,
+                null,
+                null,
+                sortOrder);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        mAdapter.swapCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mAdapter.swapCursor(null);
+    }
 }

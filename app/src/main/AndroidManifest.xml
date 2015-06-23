@@ -19,6 +19,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".CommentsActivity"
+            android:label="@string/comments_title"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.fitaleks.instafeed.MainActivity"/>
+        </activity>
+        
+        <provider
+            android:authorities="@string/content_authority"
+            android:name=".data.InstaFeedProvider"
+            android:exported="false"/>
+
+        <service android:name=".data.FeedFetchService"/>
     </application>
 
 </manifest>

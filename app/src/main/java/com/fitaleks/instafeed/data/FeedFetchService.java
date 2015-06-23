@@ -1,11 +1,12 @@
 package com.fitaleks.instafeed.data;
 
+import android.app.IntentService;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.fitaleks.instafeed.MainActivity;
 
@@ -14,47 +15,39 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Vector;
 
 /**
- * Created by alexanderkulikovskiy on 20.06.15.
+ * Created by alexanderkulikovskiy on 23.06.15.
  */
-public class LoadDataTask extends AsyncTask<String, Void, ArrayList<InstagramPhoto>> {
-
-    public interface OnTaskComplete {
-        void onPhotosFetchCompleted(ArrayList<InstagramPhoto> listOfPhotoData, boolean isNewUser);
-    }
-
-    private static final String LOG_TAG = LoadDataTask.class.getSimpleName();
+public class FeedFetchService extends IntentService {
+    private static final String LOG_TAG = FeedFetchService.class.getSimpleName();
 
     private static final String INSTAGRAM_URL       = "https://api.instagram.com/v1/users/";
     private static final String INSTAGRAM_USERS_URL = INSTAGRAM_URL + "search?";
 
-    private OnTaskComplete  mCallback;
-    private Context         mContext;
-    private boolean         mIsNewUser = false;
+    public static final String USER_NAME_EXTRA      = "user_name";
 
-    public LoadDataTask(@NonNull Context context, @NonNull OnTaskComplete callback) {
-        this.mContext   = context;
-        this.mCallback  = callback;
+    public FeedFetchService() {
+        super("FeedFetchService");
     }
 
     @Override
-    protected ArrayList<InstagramPhoto> doInBackground(String... params) {
-        if (params.length == 0) {
-            return null;
+    protected void onHandleIntent(Intent intent) {
+        String userName = intent.getStringExtra(USER_NAME_EXTRA);
+        if (fetchUserData(userName)) {
+            Utils.setNextPageUrl(this, "");
+            Utils.setIsNewUser(this, true);
+            this.getContentResolver().delete(InstaFeedContract.PhotoEntry.CONTENT_URI, null, null);
+            this.getContentResolver().delete(InstaFeedContract.CommentEntry.CONTENT_URI, null, null);
         }
-        if (fetchUserData(params[0])) {
-            Utils.setNextPageUrl(this.mContext, "");
-            mIsNewUser = true;
-        }
-        return this.fetchPhotosData();
+        this.fetchPhotosData();
     }
 
     /**
@@ -78,23 +71,22 @@ public class LoadDataTask extends AsyncTask<String, Void, ArrayList<InstagramPho
             final JSONObject wishedUserDetails = userDetailsArray.getJSONObject(0);
             final String userNick = wishedUserDetails.getString("username");
             final long userId = wishedUserDetails.getLong("id");
-            if (Utils.getName(mContext).equals(userNick)) {
+            if (Utils.getName(this).equals(userNick)) {
                 return false;
             }
-            Utils.setName(mContext, userNick);
-            Utils.setUserId(mContext, userId);
+            Utils.setName(this, userNick);
+            Utils.setUserId(this, userId);
         } catch (JSONException ex) {
             Log.e(LOG_TAG, "Error parsing json", ex);
-            Utils.setUserId(mContext, -1);
+            Utils.setUserId(this, -1);
         }
         return true;
     }
 
-    private ArrayList<InstagramPhoto> fetchPhotosData() {
-        final ArrayList<InstagramPhoto> instagramPhotoArrayList = new ArrayList<>();
-        String urlString = Utils.getNextPageUrl(this.mContext);
+    private void fetchPhotosData() {
+        String urlString = Utils.getNextPageUrl(this);
         if (urlString.equals("")) {
-            final long userId = Utils.getUserId(this.mContext);
+            final long userId = Utils.getUserId(this);
             final String MEDIA_URL = INSTAGRAM_URL + userId + "/media/recent?";
             final Uri builtUri = Uri.parse(MEDIA_URL).buildUpon()
                     .appendQueryParameter("count", "10")
@@ -105,11 +97,13 @@ public class LoadDataTask extends AsyncTask<String, Void, ArrayList<InstagramPho
 
         final String photosJsonString = sendResponse(urlString);
         try {
-            final JSONObject userMedias = new JSONObject(photosJsonString);
-            final JSONObject pagination = userMedias.getJSONObject("pagination");
-            Utils.setNextPageUrl(mContext, pagination.getString("next_url"));
+            final JSONObject baseUserMediaObject = new JSONObject(photosJsonString);
+            final JSONObject pagination = baseUserMediaObject.getJSONObject("pagination");
+            Utils.setNextPageUrl(this, pagination.getString("next_url"));
 
-            final JSONArray mediaArray = userMedias.getJSONArray("data");
+            final JSONArray mediaArray = baseUserMediaObject.getJSONArray("data");
+            Vector<ContentValues> cVVector = new Vector<>(mediaArray.length());
+            Vector<ContentValues> cVVectorComments = new Vector<>();
             for (int i = 0; i < mediaArray.length(); ++i) {
                 JSONObject userMedia = mediaArray.getJSONObject(i);
                 JSONObject allImageSizes = userMedia.getJSONObject("images");
@@ -121,14 +115,48 @@ public class LoadDataTask extends AsyncTask<String, Void, ArrayList<InstagramPho
                     JSONObject captionObject = userMedia.getJSONObject("caption");
                     descr = captionObject.getString("text");
                 }
-                instagramPhotoArrayList.add(new InstagramPhoto(urlOfImage, descr));
+                String instaPhotoId = userMedia.getString("id");
+                long timeOfPhotoCreation = userMedia.getLong("created_time");
+                ContentValues photosValues = new ContentValues();
+                photosValues.put(InstaFeedContract.PhotoEntry.COLUMN_INSTA_ID, instaPhotoId);
+                photosValues.put(InstaFeedContract.PhotoEntry.COLUMN_DESCRIPTION, descr);
+                photosValues.put(InstaFeedContract.PhotoEntry.COLUMN_IMAGE_URL, urlOfImage);
+                photosValues.put(InstaFeedContract.PhotoEntry.COLUMN_CREATED_TIME, timeOfPhotoCreation);
+
+                cVVector.add(photosValues);
+
+                JSONObject baseCommentsObject = userMedia.getJSONObject("comments");
+                JSONArray commentsData = baseCommentsObject.getJSONArray("data");
+                for (int j = 0; j < commentsData.length(); ++j) {
+                    JSONObject commentJsonData = commentsData.getJSONObject(j);
+                    String id = commentJsonData.getString("id");
+                    String text = commentJsonData.getString("text");
+                    long createdAt = commentJsonData.getLong("created_time");
+                    JSONObject authorJsonObject = commentJsonData.getJSONObject("from");
+                    String authorName = authorJsonObject.getString("username");
+                    ContentValues commentsValues = new ContentValues();
+                    commentsValues.put(InstaFeedContract.CommentEntry.COLUMN_AUTHORNAME, authorName);
+                    commentsValues.put(InstaFeedContract.CommentEntry.COLUMN_INSTA_ID, id);
+                    commentsValues.put(InstaFeedContract.CommentEntry.COLUMN_PHOTO_ID, instaPhotoId);
+                    commentsValues.put(InstaFeedContract.CommentEntry.COLUMN_TEXT, text);
+                    commentsValues.put(InstaFeedContract.CommentEntry.COLUMN_TIME, createdAt);
+                    cVVectorComments.add(commentsValues);
+                }
+            }
+            if (cVVector.size() > 0) {
+                ContentValues[] cvArray = new ContentValues[cVVector.size()];
+                cVVector.toArray(cvArray);
+                this.getContentResolver().bulkInsert(InstaFeedContract.PhotoEntry.CONTENT_URI, cvArray);
+            }
+            if (cVVectorComments.size() > 0) {
+                ContentValues[] cvArrayOfComments = new ContentValues[cVVectorComments.size()];
+                cVVectorComments.toArray(cvArrayOfComments);
+                this.getContentResolver().bulkInsert(InstaFeedContract.CommentEntry.CONTENT_URI, cvArrayOfComments);
             }
         } catch (JSONException ex) {
             Log.e(LOG_TAG, "Error parsing json", ex);
         }
-        return instagramPhotoArrayList;
     }
-
 
     private String sendResponse(@NonNull final String urlString) {
         // These two need to be declared outside the try/catch
@@ -187,10 +215,4 @@ public class LoadDataTask extends AsyncTask<String, Void, ArrayList<InstagramPho
         return jsonResponse;
     }
 
-    @Override
-    protected void onPostExecute(ArrayList<InstagramPhoto> instagramPhotos) {
-        if (this.mCallback != null) {
-            this.mCallback.onPhotosFetchCompleted(instagramPhotos, mIsNewUser);
-        }
-    }
 }
