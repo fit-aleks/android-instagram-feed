@@ -20,8 +20,9 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.activeandroid.content.ContentProvider;
 import com.fitaleks.instafeed.data.FeedFetchService;
-import com.fitaleks.instafeed.data.InstaFeedContract;
+import com.fitaleks.instafeed.data.PhotoEntry;
 import com.fitaleks.instafeed.data.Utils;
 
 
@@ -34,14 +35,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     private boolean loading     = true;
     private int previousTotal   = 0;
-
-    private static final String[] PHOTOS_COLUMNS = {
-            InstaFeedContract.PhotoEntry.TABLE_NAME + "." + InstaFeedContract.PhotoEntry._ID,
-            InstaFeedContract.PhotoEntry.COLUMN_CREATED_TIME,
-            InstaFeedContract.PhotoEntry.COLUMN_DESCRIPTION,
-            InstaFeedContract.PhotoEntry.COLUMN_IMAGE_URL,
-            InstaFeedContract.PhotoEntry.COLUMN_INSTA_ID
-    };
 
     public static final int COL_PHOTO_ID            = 0;
     public static final int COL_PHOTO_CREATION_TIME = 1;
@@ -83,10 +76,10 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Cursor cursor = mAdapter.getCursor();
                 if (cursor != null && cursor.moveToPosition(position)) {
-                    final String photoId = cursor.getString(cursor.getColumnIndex(InstaFeedContract.PhotoEntry.COLUMN_INSTA_ID));
-                    Intent goToComments = new Intent(getActivity(), CommentsActivity.class)
-                            .putExtra(CommentsActivity.KEY_PHOTO_ID, photoId);
-                    startActivity(goToComments);
+//                    final String photoId = cursor.getString(cursor.getColumnIndex(InstaFeedContract.PhotoEntry.COLUMN_INSTA_ID));
+//                    Intent goToComments = new Intent(getActivity(), CommentsActivity.class)
+//                            .putExtra(CommentsActivity.KEY_PHOTO_ID, photoId);
+//                    startActivity(goToComments);
                 }
             }
         });
@@ -142,13 +135,12 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        final String sortOrder = InstaFeedContract.PhotoEntry.COLUMN_CREATED_TIME + " DESC";
         return new CursorLoader(getActivity(),
-                InstaFeedContract.PhotoEntry.CONTENT_URI,
-                PHOTOS_COLUMNS,
+                ContentProvider.createUri(PhotoEntry.class, null),
                 null,
                 null,
-                sortOrder);
+                null,
+                null);
     }
 
     @Override

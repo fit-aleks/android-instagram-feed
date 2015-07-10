@@ -13,8 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
-import com.fitaleks.instafeed.data.InstaFeedContract;
-
 /**
  * Created by alexanderkulikovskiy on 23.06.15.
  */
@@ -22,12 +20,12 @@ public class CommentsFragment extends Fragment implements LoaderManager.LoaderCa
 
     private static final int COMMENTS_LOADER = 0;
 
-    private static final String[] COMMENT_COLUMNS = {
-            InstaFeedContract.CommentEntry.TABLE_NAME + "." + InstaFeedContract.CommentEntry._ID,
-            InstaFeedContract.CommentEntry.COLUMN_TIME,
-            InstaFeedContract.CommentEntry.COLUMN_AUTHORNAME,
-            InstaFeedContract.CommentEntry.COLUMN_TEXT
-    };
+//    private static final String[] COMMENT_COLUMNS = {
+//            InstaFeedContract.CommentEntry.TABLE_NAME + "." + InstaFeedContract.CommentEntry._ID,
+//            InstaFeedContract.CommentEntry.COLUMN_TIME,
+//            InstaFeedContract.CommentEntry.COLUMN_AUTHORNAME,
+//            InstaFeedContract.CommentEntry.COLUMN_TEXT
+//    };
 
     public static final int COL_COMMENT_ID            = 0;
     public static final int COL_COMMENT_CREATION_TIME = 1;
@@ -86,14 +84,15 @@ public class CommentsFragment extends Fragment implements LoaderManager.LoaderCa
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        Uri commentsByPhoto = InstaFeedContract.CommentEntry.buildCommentsListUri(this.mPhotoId);
-        final String sortOrder = InstaFeedContract.CommentEntry.COLUMN_TIME + " DESC";
-        return new CursorLoader(getActivity(),
-                commentsByPhoto,
-                COMMENT_COLUMNS,
-                null,
-                null,
-                sortOrder);
+//        Uri commentsByPhoto = InstaFeedContract.CommentEntry.buildCommentsListUri(this.mPhotoId);
+//        final String sortOrder = InstaFeedContract.CommentEntry.COLUMN_TIME + " DESC";
+//        return new CursorLoader(getActivity(),
+//                commentsByPhoto,
+//                COMMENT_COLUMNS,
+//                null,
+//                null,
+//                sortOrder);
+        return null;
     }
 
     @Override

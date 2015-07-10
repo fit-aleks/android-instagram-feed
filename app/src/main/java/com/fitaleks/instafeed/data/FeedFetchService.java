@@ -1,13 +1,13 @@
 package com.fitaleks.instafeed.data;
 
 import android.app.IntentService;
-import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.activeandroid.ActiveAndroid;
+import com.activeandroid.query.Delete;
 import com.fitaleks.instafeed.MainActivity;
 
 import org.json.JSONArray;
@@ -20,8 +20,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Vector;
 
 /**
  * Created by alexanderkulikovskiy on 23.06.15.
@@ -44,8 +42,8 @@ public class FeedFetchService extends IntentService {
         if (fetchUserData(userName)) {
             Utils.setNextPageUrl(this, "");
             Utils.setIsNewUser(this, true);
-            this.getContentResolver().delete(InstaFeedContract.PhotoEntry.CONTENT_URI, null, null);
-            this.getContentResolver().delete(InstaFeedContract.CommentEntry.CONTENT_URI, null, null);
+            new Delete().from(PhotoEntry.class).execute();
+            new Delete().from(CommentEntry.class).execute();
         }
         this.fetchPhotosData();
     }
@@ -81,6 +79,7 @@ public class FeedFetchService extends IntentService {
             Utils.setUserId(this, -1);
         }
         return true;
+
     }
 
     private void fetchPhotosData() {
@@ -102,56 +101,55 @@ public class FeedFetchService extends IntentService {
             Utils.setNextPageUrl(this, pagination.getString("next_url"));
 
             final JSONArray mediaArray = baseUserMediaObject.getJSONArray("data");
-            Vector<ContentValues> cVVector = new Vector<>(mediaArray.length());
-            Vector<ContentValues> cVVectorComments = new Vector<>();
-            for (int i = 0; i < mediaArray.length(); ++i) {
-                JSONObject userMedia = mediaArray.getJSONObject(i);
-                JSONObject allImageSizes = userMedia.getJSONObject("images");
-                JSONObject standardImageSize = allImageSizes.getJSONObject("standard_resolution");
-                String urlOfImage = standardImageSize.getString("url");
 
-                String descr = "";
-                if (!userMedia.isNull("caption")) {
-                    JSONObject captionObject = userMedia.getJSONObject("caption");
-                    descr = captionObject.getString("text");
+            ActiveAndroid.beginTransaction();
+            try {
+
+
+                for (int i = 0; i < mediaArray.length(); ++i) {
+                    JSONObject userMedia = mediaArray.getJSONObject(i);
+                    JSONObject allImageSizes = userMedia.getJSONObject("images");
+                    JSONObject standardImageSize = allImageSizes.getJSONObject("standard_resolution");
+                    String urlOfImage = standardImageSize.getString("url");
+
+                    String descr = "";
+                    if (!userMedia.isNull("caption")) {
+                        JSONObject captionObject = userMedia.getJSONObject("caption");
+                        descr = captionObject.getString("text");
+                    }
+                    String instaPhotoId = userMedia.getString("id");
+                    long timeOfPhotoCreation = userMedia.getLong("created_time");
+                    PhotoEntry photoEntry = new PhotoEntry();
+                    photoEntry.instaId = instaPhotoId;
+                    photoEntry.description = descr;
+                    photoEntry.imageUrl = urlOfImage;
+                    photoEntry.createdTime = timeOfPhotoCreation;
+                    photoEntry.save();
+
+                    JSONObject baseCommentsObject = userMedia.getJSONObject("comments");
+                    JSONArray commentsData = baseCommentsObject.getJSONArray("data");
+                    for (int j = 0; j < commentsData.length(); ++j) {
+                        JSONObject commentJsonData = commentsData.getJSONObject(j);
+                        String id = commentJsonData.getString("id");
+                        String text = commentJsonData.getString("text");
+                        long createdAt = commentJsonData.getLong("created_time");
+                        JSONObject authorJsonObject = commentJsonData.getJSONObject("from");
+                        String authorName = authorJsonObject.getString("username");
+
+                        CommentEntry commentEntry = new CommentEntry();
+                        commentEntry.authorName = authorName;
+                        commentEntry.instaId = id;
+                        commentEntry.photoId = instaPhotoId;
+                        commentEntry.text = text;
+                        commentEntry.time = createdAt;
+                        commentEntry.save();
+                    }
                 }
-                String instaPhotoId = userMedia.getString("id");
-                long timeOfPhotoCreation = userMedia.getLong("created_time");
-                ContentValues photosValues = new ContentValues();
-                photosValues.put(InstaFeedContract.PhotoEntry.COLUMN_INSTA_ID, instaPhotoId);
-                photosValues.put(InstaFeedContract.PhotoEntry.COLUMN_DESCRIPTION, descr);
-                photosValues.put(InstaFeedContract.PhotoEntry.COLUMN_IMAGE_URL, urlOfImage);
-                photosValues.put(InstaFeedContract.PhotoEntry.COLUMN_CREATED_TIME, timeOfPhotoCreation);
 
-                cVVector.add(photosValues);
 
-                JSONObject baseCommentsObject = userMedia.getJSONObject("comments");
-                JSONArray commentsData = baseCommentsObject.getJSONArray("data");
-                for (int j = 0; j < commentsData.length(); ++j) {
-                    JSONObject commentJsonData = commentsData.getJSONObject(j);
-                    String id = commentJsonData.getString("id");
-                    String text = commentJsonData.getString("text");
-                    long createdAt = commentJsonData.getLong("created_time");
-                    JSONObject authorJsonObject = commentJsonData.getJSONObject("from");
-                    String authorName = authorJsonObject.getString("username");
-                    ContentValues commentsValues = new ContentValues();
-                    commentsValues.put(InstaFeedContract.CommentEntry.COLUMN_AUTHORNAME, authorName);
-                    commentsValues.put(InstaFeedContract.CommentEntry.COLUMN_INSTA_ID, id);
-                    commentsValues.put(InstaFeedContract.CommentEntry.COLUMN_PHOTO_ID, instaPhotoId);
-                    commentsValues.put(InstaFeedContract.CommentEntry.COLUMN_TEXT, text);
-                    commentsValues.put(InstaFeedContract.CommentEntry.COLUMN_TIME, createdAt);
-                    cVVectorComments.add(commentsValues);
-                }
-            }
-            if (cVVector.size() > 0) {
-                ContentValues[] cvArray = new ContentValues[cVVector.size()];
-                cVVector.toArray(cvArray);
-                this.getContentResolver().bulkInsert(InstaFeedContract.PhotoEntry.CONTENT_URI, cvArray);
-            }
-            if (cVVectorComments.size() > 0) {
-                ContentValues[] cvArrayOfComments = new ContentValues[cVVectorComments.size()];
-                cVVectorComments.toArray(cvArrayOfComments);
-                this.getContentResolver().bulkInsert(InstaFeedContract.CommentEntry.CONTENT_URI, cvArrayOfComments);
+                ActiveAndroid.setTransactionSuccessful();
+            } finally {
+                ActiveAndroid.endTransaction();
             }
         } catch (JSONException ex) {
             Log.e(LOG_TAG, "Error parsing json", ex);
