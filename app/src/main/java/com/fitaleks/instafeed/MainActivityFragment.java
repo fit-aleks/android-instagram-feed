@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.provider.BaseColumns;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -21,7 +22,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.activeandroid.content.ContentProvider;
-import com.fitaleks.instafeed.data.FeedFetchService;
+import com.fitaleks.instafeed.data.BaseModel;
+import com.fitaleks.instafeed.network.FeedFetchService;
 import com.fitaleks.instafeed.data.PhotoEntry;
 import com.fitaleks.instafeed.data.Utils;
 
@@ -76,7 +78,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Cursor cursor = mAdapter.getCursor();
                 if (cursor != null && cursor.moveToPosition(position)) {
-                    final String photoId = cursor.getString(cursor.getColumnIndex("insta_id"));
+                    final long photoId =  cursor.getLong(cursor.getColumnIndex(BaseColumns._ID));
                     Intent goToComments = new Intent(getActivity(), CommentsActivity.class)
                             .putExtra(CommentsActivity.KEY_PHOTO_ID, photoId);
                     startActivity(goToComments);
@@ -127,9 +129,10 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     };
 
     private void loadMorePhotos() {
-        Intent intent = new Intent(getActivity(), FeedFetchService.class);
-        intent.putExtra(FeedFetchService.USER_NAME_EXTRA, mEditText.getText().toString());
-        getActivity().startService(intent);
+        // TODO: fix loading more photos
+//        Intent intent = new Intent(getActivity(), FeedFetchService.class);
+//        intent.putExtra(FeedFetchService.USER_NAME_EXTRA, mEditText.getText().toString());
+//        getActivity().startService(intent);
     }
 
 

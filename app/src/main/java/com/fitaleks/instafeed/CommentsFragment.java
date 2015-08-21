@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
+import com.activeandroid.Cache;
 import com.activeandroid.content.ContentProvider;
 import com.fitaleks.instafeed.data.CommentEntry;
 
@@ -24,13 +25,13 @@ public class CommentsFragment extends Fragment implements LoaderManager.LoaderCa
     private static final int COMMENTS_LOADER = 0;
 
     private CommentsAdapter mCommentsAdapter;
-    private String mPhotoId;
+    private long mPhotoId;
 
-    public static CommentsFragment newInstance(String photoId) {
+    public static CommentsFragment newInstance(long photoId) {
         CommentsFragment commentsFragment = new CommentsFragment();
 
         Bundle bundle = new Bundle();
-        bundle.putString(CommentsActivity.KEY_PHOTO_ID, photoId);
+        bundle.putLong(CommentsActivity.KEY_PHOTO_ID, photoId);
         commentsFragment.setArguments(bundle);
 
         return commentsFragment;
@@ -41,7 +42,7 @@ public class CommentsFragment extends Fragment implements LoaderManager.LoaderCa
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         final Bundle arguments = getArguments();
         if (arguments != null) {
-            mPhotoId = arguments.getString(CommentsActivity.KEY_PHOTO_ID);
+            mPhotoId = arguments.getLong(CommentsActivity.KEY_PHOTO_ID, 0);
         }
 
         final View rootView = inflater.inflate(R.layout.fragment_comments, container, false);
@@ -58,7 +59,7 @@ public class CommentsFragment extends Fragment implements LoaderManager.LoaderCa
         super.onResume();
 
         Bundle arguments = getArguments();
-        if (arguments != null && arguments.containsKey(CommentsActivity.KEY_PHOTO_ID) && !mPhotoId.equals("")) {
+        if (arguments != null && arguments.containsKey(CommentsActivity.KEY_PHOTO_ID) && mPhotoId != 0) {
             getLoaderManager().restartLoader(COMMENTS_LOADER, null, this);
         }
     }
@@ -75,20 +76,10 @@ public class CommentsFragment extends Fragment implements LoaderManager.LoaderCa
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-
-//        Uri commentsByPhoto = InstaFeedContract.CommentEntry.buildCommentsListUri(this.mPhotoId);
-//        final String sortOrder = InstaFeedContract.CommentEntry.COLUMN_TIME + " DESC";
-//        return new CursorLoader(getActivity(),
-//                commentsByPhoto,
-//                COMMENT_COLUMNS,
-//                null,
-//                null,
-//                sortOrder);
-
         return new CursorLoader(getActivity(),
                 ContentProvider.createUri(CommentEntry.class, null),
                 null,
-                "photo_id LIKE '" + this.mPhotoId + "' ",
+                "photo = " + this.mPhotoId,
                 null,
                 " time DESC ");
     }

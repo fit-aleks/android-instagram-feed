@@ -12,14 +12,16 @@ import com.activeandroid.annotation.Table;
 @Table(name = "CommentEntry", id = BaseColumns._ID)
 public class CommentEntry extends Model {
 
-    @Column(name = "comment_id")
-    public String instaId;
+    @Column(name = "comment_id", unique = true, onUniqueConflict = Column.ConflictAction.REPLACE)
+    public String commentId;
     @Column(name = "text")
     public String text;
     @Column(name = "author_username")
     public String authorName;
     @Column(name = "time")
     public long time;
-    @Column(name = "photo_id")
-    public String photoId;
+
+    @Column(name = "photo", onDelete = Column.ForeignKeyAction.CASCADE)
+    public PhotoEntry photoEntry;
+
 }

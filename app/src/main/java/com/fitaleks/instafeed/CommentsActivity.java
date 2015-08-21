@@ -15,7 +15,7 @@ public class CommentsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_comments);
         if (savedInstanceState == null) {
-            String photoId = getIntent().getStringExtra(KEY_PHOTO_ID);
+            long photoId = getIntent().getLongExtra(KEY_PHOTO_ID, 0);
             CommentsFragment commentsFragment = CommentsFragment.newInstance(photoId);
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.comments_activity, commentsFragment)
