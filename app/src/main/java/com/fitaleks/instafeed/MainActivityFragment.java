@@ -76,10 +76,10 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Cursor cursor = mAdapter.getCursor();
                 if (cursor != null && cursor.moveToPosition(position)) {
-//                    final String photoId = cursor.getString(cursor.getColumnIndex(InstaFeedContract.PhotoEntry.COLUMN_INSTA_ID));
-//                    Intent goToComments = new Intent(getActivity(), CommentsActivity.class)
-//                            .putExtra(CommentsActivity.KEY_PHOTO_ID, photoId);
-//                    startActivity(goToComments);
+                    final String photoId = cursor.getString(cursor.getColumnIndex("insta_id"));
+                    Intent goToComments = new Intent(getActivity(), CommentsActivity.class)
+                            .putExtra(CommentsActivity.KEY_PHOTO_ID, photoId);
+                    startActivity(goToComments);
                 }
             }
         });

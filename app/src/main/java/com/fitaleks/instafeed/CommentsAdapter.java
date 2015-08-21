@@ -29,10 +29,10 @@ public class CommentsAdapter extends CursorAdapter {
     public void bindView(View view, Context context, Cursor cursor) {
         final CommentViewHolder photoViewHolder = (CommentViewHolder) view.getTag();
 
-        final String author = cursor.getString(CommentsFragment.COL_COMMENT_AUTHOR);
+        final String author = cursor.getString(cursor.getColumnIndex("author_username"));
         photoViewHolder.mAuthorName.setText(author);
 
-        final String text = cursor.getString(CommentsFragment.COL_COMMENT_TEXT);
+        final String text = cursor.getString(cursor.getColumnIndex("text"));
         photoViewHolder.mText.setText(text);
     }
 

@@ -13,24 +13,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
+import com.activeandroid.content.ContentProvider;
+import com.fitaleks.instafeed.data.CommentEntry;
+
 /**
  * Created by alexanderkulikovskiy on 23.06.15.
  */
 public class CommentsFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final int COMMENTS_LOADER = 0;
-
-//    private static final String[] COMMENT_COLUMNS = {
-//            InstaFeedContract.CommentEntry.TABLE_NAME + "." + InstaFeedContract.CommentEntry._ID,
-//            InstaFeedContract.CommentEntry.COLUMN_TIME,
-//            InstaFeedContract.CommentEntry.COLUMN_AUTHORNAME,
-//            InstaFeedContract.CommentEntry.COLUMN_TEXT
-//    };
-
-    public static final int COL_COMMENT_ID            = 0;
-    public static final int COL_COMMENT_CREATION_TIME = 1;
-    public static final int COL_COMMENT_AUTHOR        = 2;
-    public static final int COL_COMMENT_TEXT          = 3;
 
     private CommentsAdapter mCommentsAdapter;
     private String mPhotoId;
@@ -84,6 +75,7 @@ public class CommentsFragment extends Fragment implements LoaderManager.LoaderCa
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+
 //        Uri commentsByPhoto = InstaFeedContract.CommentEntry.buildCommentsListUri(this.mPhotoId);
 //        final String sortOrder = InstaFeedContract.CommentEntry.COLUMN_TIME + " DESC";
 //        return new CursorLoader(getActivity(),
@@ -92,7 +84,13 @@ public class CommentsFragment extends Fragment implements LoaderManager.LoaderCa
 //                null,
 //                null,
 //                sortOrder);
-        return null;
+
+        return new CursorLoader(getActivity(),
+                ContentProvider.createUri(CommentEntry.class, null),
+                null,
+                "photo_id LIKE '" + this.mPhotoId + "' ",
+                null,
+                " time DESC ");
     }
 
     @Override
