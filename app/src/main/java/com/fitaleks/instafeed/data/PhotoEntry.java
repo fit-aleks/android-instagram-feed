@@ -49,6 +49,7 @@ public class PhotoEntry extends Model implements BaseModel {
         save();
         for (CommentEntry commentEntry : commentEntries) {
             commentEntry.photoEntry = this;
+            commentEntry.authorName = commentEntry.authorUser.userName;
             commentEntry.save();
         }
     }

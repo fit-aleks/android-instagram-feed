@@ -5,6 +5,7 @@ import android.provider.BaseColumns;
 import com.activeandroid.Model;
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
+import com.google.gson.annotations.SerializedName;
 
 /**
  * Created by alexanderkulikovskiy on 02.07.15.
@@ -20,6 +21,9 @@ public class CommentEntry extends Model {
     public String authorName;
     @Column(name = "time")
     public long time;
+
+    @SerializedName("from")
+    public User authorUser;
 
     @Column(name = "photo", onDelete = Column.ForeignKeyAction.CASCADE)
     public PhotoEntry photoEntry;
