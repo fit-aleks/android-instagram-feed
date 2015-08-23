@@ -33,10 +33,10 @@ public class InstaFeedAdapter extends CursorAdapter {
     public void bindView(View view, Context context, Cursor cursor) {
         final PhotoViewHolder photoViewHolder = (PhotoViewHolder) view.getTag();
 
-        final String description = cursor.getString(MainActivityFragment.COL_PHOTO_DESCR);
+        final String description = cursor.getString(cursor.getColumnIndex("description"));
         photoViewHolder.mDescription.setText(description);
 
-        final String imageUrl = cursor.getString(MainActivityFragment.COL_PHOTO_URL);
+        final String imageUrl = cursor.getString(cursor.getColumnIndex("image_url"));
         Picasso.with(context)
                 .load(imageUrl)
                 .into(photoViewHolder.mImageView);

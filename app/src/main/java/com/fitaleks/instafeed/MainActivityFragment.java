@@ -38,11 +38,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private boolean loading     = true;
     private int previousTotal   = 0;
 
-    public static final int COL_PHOTO_ID            = 0;
-    public static final int COL_PHOTO_CREATION_TIME = 1;
-    public static final int COL_PHOTO_DESCR         = 2;
-    public static final int COL_PHOTO_URL           = 3;
-
     public MainActivityFragment() {
     }
 

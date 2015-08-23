@@ -1,7 +1,6 @@
 package com.fitaleks.instafeed;
 
 import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -13,7 +12,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
-import com.activeandroid.Cache;
 import com.activeandroid.content.ContentProvider;
 import com.fitaleks.instafeed.data.CommentEntry;
 
