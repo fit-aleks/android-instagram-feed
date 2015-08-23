@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/android-instagram-feed.iml" filepath="$PROJECT_DIR$/android-instagram-feed.iml" />
+      <module fileurl="file://$PROJECT_DIR$/InstaFeed.iml" filepath="$PROJECT_DIR$/InstaFeed.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>

@@ -2,11 +2,13 @@ package com.fitaleks.instafeed.network;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.activeandroid.ActiveAndroid;
 import com.activeandroid.query.Delete;
+import com.activeandroid.query.Select;
 import com.fitaleks.instafeed.MainActivity;
 import com.fitaleks.instafeed.data.CommentEntry;
 import com.fitaleks.instafeed.data.PhotoEntry;
@@ -39,8 +41,6 @@ public class FeedFetchService extends IntentService {
         this.instagramService = NetworkHelper.getInstaRestAdapter();
 
         if (fetchUserData(userName)) {
-            Utils.setNextPageUrl(this, "");
-            Utils.setIsNewUser(this, true);
             new Delete().from(PhotoEntry.class).execute();
             new Delete().from(CommentEntry.class).execute();
         }
@@ -74,7 +74,14 @@ public class FeedFetchService extends IntentService {
     }
 
     private void fetchPhotosData() {
-        final List<PhotoEntry> listPhotos = instagramService.getPhotos(Utils.getUserId(this), 10, MainActivity.INSTA_CLIENT_ID);
+        final PhotoEntry latestPhoto = new Select().from(PhotoEntry.class).orderBy(" insta_id ASC ").executeSingle();
+        List<PhotoEntry> listPhotos;
+        if (latestPhoto != null) {
+            listPhotos = instagramService.getPhotosWithPage(Utils.getUserId(this), 10, MainActivity.INSTA_CLIENT_ID, latestPhoto.instaId);
+        } else {
+            listPhotos = instagramService.getPhotos(Utils.getUserId(this), 10, MainActivity.INSTA_CLIENT_ID);
+        }
+
         Log.d(LOG_TAG, "resService = " + listPhotos.size());
         ActiveAndroid.beginTransaction();
         try {

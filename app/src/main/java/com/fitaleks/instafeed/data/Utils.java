@@ -35,27 +35,4 @@ public class Utils {
         return sharedPreferences.getLong(context.getString(R.string.pref_user_id), -1);
     }
 
-    public static void setNextPageUrl(@NonNull final Context context, String nextUrl) {
-        final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        sharedPreferences.edit()
-                .putString(context.getString(R.string.pref_next_url), nextUrl)
-                .apply();
-    }
-
-    public static String getNextPageUrl(@NonNull final Context context) {
-        final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getString(context.getString(R.string.pref_next_url), "");
-    }
-
-    public static void setIsNewUser(@NonNull final Context context, boolean isNewUser) {
-        final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        sharedPreferences.edit()
-                .putBoolean(context.getString(R.string.pref_is_new_user), isNewUser)
-                .apply();
-    }
-
-    public static boolean getIsNewUSer(@NonNull final Context context) {
-        final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getBoolean(context.getString(R.string.pref_next_url), false);
-    }
 }

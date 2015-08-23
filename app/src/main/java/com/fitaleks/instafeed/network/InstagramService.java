@@ -19,4 +19,7 @@ public interface InstagramService {
 
     @GET("/{user_id}/media/recent")
     List<PhotoEntry> getPhotos(@Path("user_id") long userId, @Query("count") int count, @Query("client_id") String clientId);
+
+    @GET("/{user_id}/media/recent")
+    List<PhotoEntry> getPhotosWithPage(@Path("user_id") long userId, @Query("count") int count, @Query("client_id") String clientId, @Query("max_id") String maxId);
 }

@@ -129,10 +129,9 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     };
 
     private void loadMorePhotos() {
-        // TODO: fix loading more photos
-//        Intent intent = new Intent(getActivity(), FeedFetchService.class);
-//        intent.putExtra(FeedFetchService.USER_NAME_EXTRA, mEditText.getText().toString());
-//        getActivity().startService(intent);
+        Intent intent = new Intent(getActivity(), FeedFetchService.class);
+        intent.putExtra(FeedFetchService.USER_NAME_EXTRA, mEditText.getText().toString());
+        getActivity().startService(intent);
     }
 
 
