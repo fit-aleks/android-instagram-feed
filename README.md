@@ -1,18 +1,26 @@
 # Instagram feed
 This app was used as a test for Senior Android developer position in early 2015.
+Test was succesully passed.
 
 ## Features
 
 With the app, you can:
-* Enter instagram user name and get his feed of photos
+* Discover the photo feed of user by entering his name
 * Read comments
 
 ## How to Work with the Source
 
-App uses Instagram API to retrieve the data. You must provide your own API key in order to build the app. When you get it, just paste it to:
+This app uses Instagram API to retrieve data.
+You must provide your own API key in order to build the app. When you get it, just paste it to:
     ```
     MainActivity.java
     ```
+
+## Libraries
+
+- [Picasso](http://square.github.io/picasso/)
+- [Retrofit](http://square.github.io/retrofit/)
+- [ActiveAndroid](https://github.com/pardom/ActiveAndroid/)
 
 ## License
 
